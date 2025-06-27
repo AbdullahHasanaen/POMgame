@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة اللغومي</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: clamp(24px, 5vw, 36px);
+            margin-bottom: 20px;
+            color: #4a5568;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px auto;
+            max-width: 300px;
+            width: 100%;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            background: linear-gradient(145deg, #e2e8f0, #cbd5e0);
+            border: none;
+            border-radius: 12px;
+            font-size: clamp(20px, 4vw, 30px);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 
+                4px 4px 8px rgba(0, 0, 0, 0.1),
+                -4px -4px 8px rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .cell:hover:not(.revealed):not(.mine) {
+            transform: translateY(-2px);
+            box-shadow: 
+                6px 6px 12px rgba(0, 0, 0, 0.15),
+                -6px -6px 12px rgba(255, 255, 255, 0.9);
+        }
+
+        .cell:active:not(.revealed):not(.mine) {
+            transform: translateY(0);
+            box-shadow: 
+                2px 2px 4px rgba(0, 0, 0, 0.1),
+                -2px -2px 4px rgba(255, 255, 255, 0.8);
+        }
+
+        .cell.revealed {
+            background: linear-gradient(145deg, #48bb78, #38a169);
+            color: white;
+            box-shadow: 
+                inset 2px 2px 4px rgba(0, 0, 0, 0.2),
+                2px 2px 8px rgba(0, 0, 0, 0.1);
+            animation: revealPulse 0.5s ease;
+        }
+
+        .cell.mine {
+            background: linear-gradient(145deg, #f56565, #e53e3e);
+            color: white;
+            box-shadow: 
+                inset 2px 2px 4px rgba(0, 0, 0, 0.2),
+                2px 2px 8px rgba(0, 0, 0, 0.1);
+            animation: explode 0.6s ease;
+        }
+
+        @keyframes revealPulse {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes explode {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.2); }
+            50% { transform: scale(0.9); }
+            75% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        #status {
+            font-size: clamp(18px, 4vw, 24px);
+            margin: 20px 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #718096;
+        }
+
+        .reset-btn {
+            background: linear-gradient(145deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 15px;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .reset-btn:active {
+            transform: translateY(0);
+        }
+
+        .win-celebration {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            animation: celebrate 2s ease-in-out;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        @keyframes celebrate {
+            0%, 100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            #board {
+                gap: 8px;
+                max-width: 250px;
+            }
+            
+            .cell {
+                border-radius: 8px;
+            }
+        }
+
+        /* Tablet optimizations */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .game-container {
+                max-width: 450px;
+            }
+            
+            #board {
+                max-width: 350px;
+                gap: 12px;
+            }
+        }
+
+        /* Desktop optimizations */
+        @media (min-width: 769px) {
+            .game-container {
+                max-width: 500px;
+            }
+            
+            #board {
+                max-width: 400px;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>لعبة اللغومي 💣</h1>
+        
+        <div id="board"></div>
+        
+        <div class="game-info">
+            <span>الخانات المكشوفة: <span id="revealed-count">0</span>/8</span>
+            <span>🍀 حظ سعيد</span>
+        </div>
+        
+        <p id="status">اختر خانة... حظ سعيد! 🍀</p>
+        
+        <button class="reset-btn" onclick="resetGame()">لعبة جديدة 🎮</button>
+    </div>
+
+    <audio id="win-sound" preload="auto">
+        <source src="/assets/sounds/won.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="lose-sound" preload="auto">
+        <source src="/assets/sounds/lose1.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const board = document.getElementById("board");
+        const statusText = document.getElementById("status");
+        const revealedCountElement = document.getElementById("revealed-count");
+        
+        let minePosition = Math.floor(Math.random() * 9);
+        let revealedCells = 0;
+        let gameOver = false;
+        let cells = [];
+
+        function initializeGame() {
+            board.innerHTML = '';
+            cells = [];
+            
+            for(let i = 0; i < 9; i++){
+                const cell = document.createElement('div');
+                cell.classList.add("cell");
+                cell.dataset.index = i;
+                cell.addEventListener("click", () => handleCellClick(i));
+                cells.push(cell);
+                board.appendChild(cell);
+            }
+        }
+
+        function updateRevealedCount() {
+            revealedCountElement.textContent = revealedCells;
+        }
+
+        function showCelebration() {
+            const celebration = document.createElement('div');
+            celebration.className = 'win-celebration';
+            celebration.textContent = '🏆';
+            document.body.appendChild(celebration);
+            
+            
+        }
+
+        async function handleCellClick(index) {
+            if (gameOver || cells[index].classList.contains('revealed')) return;
+
+            if (index === minePosition) {
+                // Hit mine
+                cells[index].classList.add('mine');
+                cells[index].textContent = '💣';
+                statusText.textContent = "ابلع لك 🤣";
+                gameOver = true;
+
+                try {
+                    const response = await axios.get("https://jsonplaceholder.typicode.com/users/1");
+                    const username = response.data.username;
+                    console.log("API Response:", username);
+
+                    const loseSound = document.getElementById('lose-sound');
+                    if (loseSound) {
+                        loseSound.volume = 0.9;
+                        loseSound.play().catch(e => console.log("Audio play failed:", e));
+                    }
+
+                    
+                } catch (error) {
+                    console.error('API Error:', error);
+                    
+                }
+            } else {
+                // Safe cell
+                cells[index].classList.add('revealed');
+                cells[index].textContent = '✅';
+                revealedCells++;
+                updateRevealedCount();
+
+                if (revealedCells === 8) {
+                    gameOver = true;
+                    statusText.textContent = 'مبروكككككك ححححببببب 🎉';
+                    showCelebration();
+
+                    const winSound = document.getElementById('win-sound');
+                    if (winSound) {
+                        winSound.play().catch(e => console.log("Audio play failed:", e));
+                    }
+
+                  
+                }
+            }
+        }
+
+        function resetGame() {
+            minePosition = Math.floor(Math.random() * 9);
+            revealedCells = 0;
+            gameOver = false;
+            statusText.textContent = "اختر خانة... حظ سعيد! 🍀";
+            updateRevealedCount();
+            initializeGame();
+        }
+
+        // Initialize the game when page loads
+        window.addEventListener('load', () => {
+            initializeGame();
+            updateRevealedCount();
+        });
+    </script>
+</body>
+</html>
